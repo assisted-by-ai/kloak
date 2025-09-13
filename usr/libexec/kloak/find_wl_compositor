@@ -3,8 +3,6 @@
 ## Copyright (C) 2025 - 2025 ENCRYPTED SUPPORT LLC <adrelanos@whonix.org>
 ## See the file COPYING for copying conditions.
 
-# pylint: disable=broad-exception-caught
-
 """
 find_wl_compositor.py - determines the XDG_RUNTIME_DIR and WAYLAND_DISPLAY
 environment variable values needed to connect to the compositor on the active
@@ -52,6 +50,7 @@ can do that, they probably already have enough access to the machine to do
 much worse things.
 """
 
+import logging
 import os
 import sys
 import subprocess
@@ -60,6 +59,9 @@ import socket
 import struct
 from pathlib import Path
 from typing import Pattern, Match, NoReturn
+
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 known_compositor_list: list[str] = [
     "labwc",
@@ -121,7 +123,8 @@ def query_sock_pid(sock_path: str) -> str | None:
             pid: int
             pid, _, _ = struct.unpack(struct_fmt, rslt_buf)
             return str(pid)
-    except Exception:
+    except (OSError, struct.error) as exc:
+        logger.warning("Failed to query PID for %s: %s", sock_path, exc)
         return None
 
 
@@ -141,7 +144,8 @@ def main() -> NoReturn:
                 encoding="utf-8",
             ).stdout.strip()
         )
-    except Exception:
+    except (subprocess.CalledProcessError, OSError, ValueError) as exc:
+        logger.error("Unable to determine active VT: %s", exc)
         print("no_console")
         sys.exit(1)
 
@@ -171,7 +175,8 @@ def main() -> NoReturn:
                 proc_control_tty_major: int = (
                     proc_control_tty_int & 0xFF00
                 ) >> 8
-            except Exception:
+            except (OSError, ValueError) as exc:
+                logger.warning("Failed to read stat for %s: %s", proc_entry, exc)
                 continue
 
             if (
@@ -185,10 +190,12 @@ def main() -> NoReturn:
                 comm_str: str = proc_comm_path.read_text(encoding="ascii")
                 if comm_str.endswith("\n"):
                     comm_str = comm_str[:-1]
-            except Exception:
+            except OSError as exc:
+                logger.warning("Failed to read comm for %s: %s", proc_entry, exc)
                 continue
             process_on_vt_list.append((proc_entry.name, comm_str))
-    except Exception:
+    except OSError as exc:
+        logger.error("Cannot iterate /proc: %s", exc)
         print("cannot_iter_proc")
         sys.exit(1)
 
@@ -211,7 +218,8 @@ def main() -> NoReturn:
             current_process_environ: list[bytes] = (
                 Path(f"/proc/{pid_str}/environ").read_bytes().split(b"\0")
             )
-        except Exception:
+        except OSError as exc:
+            logger.warning("Failed to read environ for pid %s: %s", pid_str, exc)
             continue
         for current_process_env_var in current_process_environ:
             if not current_process_env_var.startswith(b"XDG_RUNTIME_DIR="):
@@ -223,7 +231,12 @@ def main() -> NoReturn:
                 current_process_env_str: str = current_process_env_val.decode(
                     encoding="utf-8"
                 )
-            except Exception:
+            except UnicodeDecodeError as exc:
+                logger.warning(
+                    "Failed to decode environment variable for pid %s: %s",
+                    pid_str,
+                    exc,
+                )
                 continue
             if current_process_env_str != "":
                 xdg_runtime_dir_set.add(current_process_env_str)
@@ -236,14 +249,18 @@ def main() -> NoReturn:
                 try:
                     if not xdg_runtime_dir_entry.is_socket():
                         continue
-                except Exception:
+                except OSError as exc:
+                    logger.warning(
+                        "Failed to stat %s: %s", xdg_runtime_dir_entry, exc
+                    )
                     continue
                 if not xdg_runtime_dir_entry.name.startswith("wayland-"):
                     continue
                 wayland_socket_list.append(
                     (str(xdg_runtime_dir), xdg_runtime_dir_entry.name)
                 )
-        except Exception:
+        except OSError as exc:
+            logger.warning("Failed to access %s: %s", xdg_runtime_dir_path, exc)
             continue
 
     wayland_socket_list.sort(key=wlsortmorph)
@@ -282,7 +299,8 @@ def main() -> NoReturn:
         ) as output_file:
             print(f"XDG_RUNTIME_DIR={xdg_runtime_dir_var}", file=output_file)
             print(f"WAYLAND_DISPLAY={wayland_display_var}", file=output_file)
-    except Exception:
+    except OSError as exc:
+        logger.error("Cannot write output file: %s", exc)
         print("cannot_write_output_file")
         sys.exit(1)
 

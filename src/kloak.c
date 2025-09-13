@@ -820,22 +820,35 @@ static int32_t sleep_ms(int64_t ms) {
 
 static char *sgenprintf(char *str, ...) {
   char *rslt = NULL;
-  int rslt_len = 0;
-  int rslt_writelen = 0;
+  size_t rslt_len = 0;
+  size_t rslt_writelen = 0;
+  ssize_t tmp_len = 0;
 
   va_list extra_args;
   va_start(extra_args, str);
-  rslt_len = vsnprintf(NULL, 0, str, extra_args) + 1;
+  tmp_len = vsnprintf(NULL, 0, str, extra_args);
   va_end(extra_args);
-  if (rslt_len == -1) {
+  if (tmp_len < 0) {
     fprintf(stderr,
       "FATAL ERROR: String processing issue: %s\n", strerror(errno));
     exit(1);
   }
-  rslt = safe_calloc(1, (size_t)(rslt_len));
+  if ((size_t)tmp_len > SIZE_MAX - 1) {
+    fprintf(stderr,
+      "FATAL ERROR: String processing issue: %s\n", strerror(EOVERFLOW));
+    exit(1);
+  }
+  rslt_len = (size_t)tmp_len + 1;
+  rslt = safe_calloc(1, rslt_len);
   va_start(extra_args, str);
-  rslt_writelen = vsnprintf(rslt, (size_t)(rslt_len), str, extra_args);
+  tmp_len = vsnprintf(rslt, rslt_len, str, extra_args);
   va_end(extra_args);
+  if (tmp_len < 0 || (size_t)tmp_len >= rslt_len) {
+    fprintf(stderr,
+      "FATAL ERROR: String processing issue: %s\n", strerror(errno));
+    exit(1);
+  }
+  rslt_writelen = (size_t)tmp_len;
 
   assert(rslt_writelen == rslt_len - 1);
   return rslt;

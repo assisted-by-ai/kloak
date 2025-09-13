@@ -427,18 +427,28 @@ static int64_t current_time_ms(void) {
 }
 
 static int64_t random_between(int64_t lower, int64_t upper) {
-  assert(lower >= 0);
-  assert(upper >= 0);
-
   int64_t maxval;
   union rand_int64 randval;
+
+  if (lower < 0) {
+    lower = 0;
+  }
+  if (upper < 0) {
+    upper = 0;
+  }
+
   /* default to max if the interval is not valid */
   if (lower >= upper) {
     return upper;
   }
 
+  if (upper - lower == INT64_MAX) {
+    upper--;
+  }
   maxval = upper - lower + 1;
-  assert(maxval > 0);
+  if (maxval <= 0) {
+    return upper;
+  }
   do {
     read_random(randval.raw, sizeof(int64_t));
     if (randval.val == INT64_MIN) {

@@ -364,6 +364,7 @@ static int create_shm_file(ssize_t size) {
   int fd = -1;
   /* 18 = length of string '/kloak-XXXXXXXXXX' + NULL terminator */
   char name[18];
+  assert(sizeof(name) >= sizeof("/kloak-XXXXXXXXXX"));
 
   assert(size >= 0);
   /*
@@ -381,7 +382,8 @@ static int create_shm_file(ssize_t size) {
   }
 
   do {
-    strcpy(name, "/kloak-XXXXXXXXXX");
+    int len = snprintf(name, sizeof(name), "%s", "/kloak-XXXXXXXXXX");
+    assert(len >= 0 && (size_t)len < sizeof(name));
     /* 10 = length of 'XXXXXXXXXX', 11 = length + NULL terminator */
     randname(name + sizeof(name) - 11, 10);
     --retries;

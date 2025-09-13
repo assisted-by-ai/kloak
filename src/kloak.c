@@ -270,7 +270,7 @@ static char *safe_strdup(const char *s) {
 }
 
 static int safe_open(const char *pathname, int flags) {
-  int out_int = open(pathname, flags);
+  int out_int = open(pathname, flags | O_CLOEXEC);
   if (out_int == -1) {
     fprintf(stderr,
       "FATAL ERROR: Could not open file '%s': %s\n", pathname,
@@ -296,6 +296,17 @@ static DIR *safe_opendir(const char *name, bool allow_enoent) {
       fprintf(stderr,
         "FATAL ERROR: Could not open directory '%s': %s\n", name,
         strerror(errno));
+      exit(1);
+    }
+  } else {
+    int fd = dirfd(out_ptr);
+    if (fd == -1 || fcntl(fd, F_SETFD, FD_CLOEXEC) == -1) {
+      if (fd != -1) {
+        closedir(out_ptr);
+      }
+      fprintf(stderr,
+        "FATAL ERROR: Could not set FD_CLOEXEC on directory '%s': %s\n",
+        name, strerror(errno));
       exit(1);
     }
   }
@@ -385,7 +396,7 @@ static int create_shm_file(ssize_t size) {
     /* 10 = length of 'XXXXXXXXXX', 11 = length + NULL terminator */
     randname(name + sizeof(name) - 11, 10);
     --retries;
-    fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL, 0600);
+    fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
     if (fd >= 0) {
       shm_unlink(name);
       break;

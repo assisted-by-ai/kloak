@@ -55,6 +55,9 @@
 
 #include "kloak.h"
 
+#define ESC_KEY_MAX_COMBOS 10
+#define ESC_KEY_MAX_KEYS_PER_COMBO 5
+
 /********************/
 /* global variables */
 /********************/
@@ -1943,6 +1946,13 @@ static void parse_esc_key_str(const char *esc_key_str) {
       exit(1);
     }
 
+    if (esc_key_list_len >= ESC_KEY_MAX_COMBOS) {
+      fprintf(stderr,
+        "FATAL ERROR: Too many escape key combos specified (max %d)!\n",
+        ESC_KEY_MAX_COMBOS);
+      exit(1);
+    }
+
     esc_key_list_len++;
     esc_key_list = safe_reallocarray(esc_key_list, esc_key_list_len,
       sizeof(uint32_t *));
@@ -1958,6 +1968,13 @@ static void parse_esc_key_str(const char *esc_key_str) {
       if (sub_token[0] == '\0') {
         fprintf(stderr,
           "FATAL ERROR: Empty key name specified in escape key list!\n");
+        exit(1);
+      }
+
+      if (esc_key_sublist_len[i] >= ESC_KEY_MAX_KEYS_PER_COMBO) {
+        fprintf(stderr,
+          "FATAL ERROR: Escape key combo too long (max %d keys)!\n",
+          ESC_KEY_MAX_KEYS_PER_COMBO);
         exit(1);
       }
 

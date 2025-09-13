@@ -240,6 +240,11 @@ static struct key_name_value key_table[] = {
 /*********************/
 
 static void *safe_calloc(size_t nmemb, size_t size) {
+  if (nmemb != 0 && size > SIZE_MAX / nmemb) {
+    fprintf(stderr,
+      "FATAL ERROR: Requested allocation size would overflow\n");
+    exit(1);
+  }
   void *out_ptr = calloc(nmemb, size);
   if (out_ptr == NULL) {
     fprintf(stderr,

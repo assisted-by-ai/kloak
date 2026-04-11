@@ -73,7 +73,18 @@ ifeq (, $(shell which $(PKG_CONFIG)))
 $(error pkg-config not installed!)
 endif
 
+## CodeQL autobuild detects Makefile before build.sh, so install
+## build dependencies here when running in CI (GitHub Actions sets CI=true).
+ifdef CI
+.PHONY: install-deps
+install-deps:
+	sudo --non-interactive apt-get update --error-on=any
+	sudo --non-interactive apt-get install --yes libevdev2 libevdev-dev libinput10 libinput-dev libwayland-client0 libwayland-dev libxkbcommon0 libxkbcommon-dev pkg-config
+
+all : install-deps kloak
+else
 all : kloak
+endif
 
 kloak : src/kloak.c src/kloak.h src/xdg-shell-protocol.h src/xdg-shell-protocol.c src/xdg-output-protocol.h src/xdg-output-protocol.c src/wlr-layer-shell.c src/wlr-layer-shell.h src/wlr-virtual-pointer.c src/wlr-virtual-pointer.h src/virtual-keyboard.c src/virtual-keyboard.h
 	## Comment out the below line and uncomment the line after it to do a test build with -fanalyzer

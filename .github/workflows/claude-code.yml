@@ -1,0 +1,29 @@
+## Claude Code automated review.
+## Requires Anthropic API key.
+## Add this repository secret:
+##   ANTHROPIC_API_KEY - from https://console.anthropic.com/
+##
+## Uncomment everything below to enable.
+
+# name: Claude Code Review
+#
+# on:
+#   pull_request:
+#     types: [ opened, synchronize ]
+#
+# jobs:
+#   review:
+#     name: Claude Code Review
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       pull-requests: write
+#
+#     steps:
+#     - name: Checkout repository
+#       uses: actions/checkout@v4
+#
+#     - name: Run Claude Code Review
+#       uses: anthropics/claude-code-action@v1
+#       with:
+#         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

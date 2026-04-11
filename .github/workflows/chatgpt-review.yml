@@ -1,0 +1,27 @@
+## ChatGPT automated PR review.
+## Requires OpenAI API key (separate from ChatGPT Plus subscription).
+## Add this repository secret:
+##   OPENAI_API_KEY - from https://platform.openai.com/api-keys
+##
+## Uncomment everything below to enable.
+
+# name: ChatGPT Review
+#
+# on:
+#   pull_request:
+#     types: [ opened, synchronize ]
+#
+# jobs:
+#   review:
+#     name: ChatGPT Review
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       pull-requests: write
+#
+#     steps:
+#     - name: Code Review with ChatGPT
+#       uses: anc95/ChatGPT-CodeReview@main
+#       env:
+#         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

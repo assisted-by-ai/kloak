@@ -5,9 +5,12 @@
 
 export DH_VERBOSE=1
 
-export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-DPKG_EXPORT_BUILDFLAGS = 1
-include /usr/share/dpkg/buildflags.mk
+# Disabled: the Makefile already sets comprehensive hardening flags
+# (FORTIFY_CFLAGS). dpkg-buildflags appends to CFLAGS after -ftrapv,
+# risking silent override if a future dpkg-buildflags ever injects -fwrapv.
+#export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+#DPKG_EXPORT_BUILDFLAGS = 1
+#include /usr/share/dpkg/buildflags.mk
 
 %:
 	dh $@

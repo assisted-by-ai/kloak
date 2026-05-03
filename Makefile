@@ -50,6 +50,12 @@ endif
 # signed integer arithmetic without explicit overflow checks. Also make sure
 # that -ftrapv ALWAYS comes after -fno-strict-overflow, as
 # -fno-strict-overflow implies -fwrapv, and -ftrapv must override -fwrapv.
+#
+# WARNING FOR PACKAGERS: Do NOT append -fwrapv to CFLAGS. Because user/distro
+# CFLAGS appear after FORTIFY_CFLAGS (line 72), any -fwrapv injected by a
+# packaging system (e.g. dpkg-buildflags, rpmbuild, ebuild) will silently
+# override -ftrapv, turning signed overflow from a trap into a silent
+# wraparound. This disables kloak's primary integer overflow protection.
 FORTIFY_CFLAGS := -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=3 \
 	-fstack-clash-protection -fstack-protector-all \
 	-fno-delete-null-pointer-checks -fno-strict-overflow -fno-strict-aliasing \
